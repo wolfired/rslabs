@@ -1,0 +1,7 @@
+[package]
+name = "rslabs"
+version = "0.1.0"
+authors = ["LinkWu <wjianl@qq.com>"]
+edition = "2018"
+
+[dependencies]
