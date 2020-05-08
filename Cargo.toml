@@ -6,8 +6,9 @@ edition = "2018"
 default-run = "rslabs"
 
 [workspace]
-members = ["book", "c2rs", "light2d"]
+members = ["btcodec", "btseed", "book", "c2rs", "light2d"]
 
 [features]
 
 [dependencies]
+png = "0.16.1"
