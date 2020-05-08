@@ -48,15 +48,12 @@ struct Son {
 
 impl Son {
     // 方法, 调用方式: StructInstanceName.MethodName
-    fn hi(&self){
+    fn hi(&self) {
         println!("Hi, my name is {0}! {1} years old!", self.name, self.age);
     }
     // 联合函数, 调用方式: StructName::FunctionName
-    fn new(name:String, age:i8) -> Son {
-        Son {
-            name,
-            age
-        }
+    fn new(name: String, age: i8) -> Son {
+        Son { name, age }
     }
 }
 

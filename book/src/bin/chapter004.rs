@@ -45,7 +45,7 @@ fn section001() {
         let v1 = v0;
         println!("{:?}, {:?}", v0, v1);
 
-        let v0 = [P{age:0}];
+        let v0 = [P { age: 0 }];
         let v1 = v0;
         println!("{:?}", v1); // v0被移动, 不再有效
     }
@@ -65,22 +65,22 @@ fn section001() {
         // 自定义数据类型: 枚举和结构体, 不是Copy的
         // 复合数据类型: 元组和数组, 只要元素都是Copy的, 那就是Copy的
         // PS: 在我的理解里, 引用也是Copy的
-        let _x = 5;
-        let _y = _x;
-        println!("{0}, {1}", _x, _y);
+        let x = 5;
+        let y = x;
+        println!("{0}, {1}", x, y);
 
-        let _x = (0, 0.0);
-        let _y = _x;
-        println!("{:?}, {:?}", _x, _y);
+        let x = (0, 0.0);
+        let y = x;
+        println!("{:?}, {:?}", x, y);
 
-        let _x = [0; 1];
-        let _y = _x;
-        println!("{:?}, {:?}", _x, _y);
+        let x = [0; 1];
+        let y = x;
+        println!("{:?}, {:?}", x, y);
 
-        let _x = P { age: 0 };
-        let _y = &_x;
-        let _z = _y;
-        println!("{:?}, {:?}, {:?}", _x, _y, _z);
+        let x = P { age: 0 };
+        let y = &x;
+        let z = y;
+        println!("{:?}, {:?}, {:?}", x, y, z);
     }
 
     {

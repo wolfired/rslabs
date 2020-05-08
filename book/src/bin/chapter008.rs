@@ -8,5 +8,4 @@ fn main() {
 /**
  * 使用向量存储列表(Storing Lists of Values with Vectors)
  */
-fn section001() {
-}
+fn section001() {}

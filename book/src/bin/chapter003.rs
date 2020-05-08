@@ -22,10 +22,10 @@ fn section001() {
     {
         let x: i32; // 使用let声明变量, 其值在初始化后只读
         x = 0; // 初始化
-        // x = 1; // error
+               // x = 1; // error
 
         let y = 0; // 使用let声明并初始化变量, 变量类型可以忽略由具体初始值决定, 其值只读
-        // y = 1; // error
+                   // y = 1; // error
 
         let mut z = 0; // 使用let mut声明并初始化变量, 其值可写
         z = 1;
@@ -109,7 +109,7 @@ fn section002() {
             // 类型声明: (type0, type1, ...)
 
             let v = (); // 空元组
-            // v = (); // error: v只读, 不能修改v的值
+                        // v = (); // error: v只读, 不能修改v的值
 
             let v = (0, 0.0);
             // v.0 = 1; // error: v只读, 不能修改v内部的值
@@ -124,7 +124,7 @@ fn section002() {
 
             let v = (0, 0.0);
             let (x, mut y) = v; // 解构赋值
-            // x = 1; // error: x只读
+                                // x = 1; // error: x只读
             y = 1.0;
 
             let mut v = (0, 0.0);
@@ -140,7 +140,7 @@ fn section002() {
             // 值初始化: [value0, value1, ...] || [initvalue; length]
 
             let v = [0; 0]; //空数组
-            // v = [0; 0]; // error: v只读, 不能修改v的值
+                            // v = [0; 0]; // error: v只读, 不能修改v的值
 
             let v = [0; 1];
             // v[0] = 1; // error: v只读, 不能修改v内部的值
@@ -151,7 +151,7 @@ fn section002() {
 
             let v = [0, 0]; // 声明并初始化一个长度为1的i32数组, 唯一的元素值为1
             let [a, mut b] = v; // 解构赋值
-            // a = 1; // error: a只读
+                                // a = 1; // error: a只读
             b = 1;
 
             let mut v = [0, 0];
