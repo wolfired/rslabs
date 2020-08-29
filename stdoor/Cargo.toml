@@ -1,0 +1,11 @@
+[package]
+name = "stdoor"
+version = "0.1.0"
+authors = ["LinkWu <wjianl@qq.com>"]
+edition = "2018"
+default-run = "stdoor_error"
+workspace = ".."
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
