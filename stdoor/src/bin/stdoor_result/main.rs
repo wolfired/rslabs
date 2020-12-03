@@ -1,10 +1,12 @@
-use stdoor::trace;
+//! `std::result`
+//! 
+//! 使用`Result`进行错误处理, `Result<T, E>`用于返回和传播错误, 这是个枚举
+//! 
+//! `OK(T)`表示成功并保存值
+//! 
+//! `Err(E)`表示错误并保存错误值
 
-/// std::result
-/// 使用 Result 进行错误处理
-/// Result<T, E> 用于返回和传播错误, 这是个枚举
-/// OK(T) 表示成功并保存值
-/// Err(E) 表示错误并保存错误值
+use stdoor::trace;
 
 fn main() {
     match error_inner(63) {
@@ -35,9 +37,8 @@ fn error_inner(v: i8) -> Rii {
 }
 
 /// "?" 操作符
-/// 如果一个函数返回 Result
-/// 而其内部调用别一个函数也返回同一 Result
-/// 则可以使用 "?" 简化代码
+/// 
+/// 如果一个函数返回`Result`, 而其内部调用别一个函数也返回同一`Result`, 则可以使用`?` 简化代码
 fn error_outer(v: i8) -> Rii {
     let v = error_inner(v)?;
     Ok(v)

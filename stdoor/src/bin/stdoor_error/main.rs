@@ -1,11 +1,9 @@
+//! std::error <br/>
+//! 本模块定义了错误相关的特性 <br/>
+//! `std::error::Error` 错误特性 <br/>
+
 use std::error::Error;
 use std::fmt::Display;
-
-/// std::error
-/// 本模块定义了错误相关的特性
-/// 
-/// std::error::Error
-/// 错误特性
 
 #[derive(Debug)]
 struct LowerError;
