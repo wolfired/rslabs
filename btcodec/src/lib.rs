@@ -4,6 +4,7 @@
 use std::cmp::PartialEq;
 use std::cmp::PartialOrd;
 use std::fmt::Display;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub enum Value {
@@ -13,7 +14,7 @@ pub enum Value {
     #[cfg(feature = "ext")]
     F64(f64),
     List(Vec<Self>),
-    Dict(std::collections::HashMap<String, Self>),
+    Dict(HashMap<String, Self>),
 }
 
 impl Value {

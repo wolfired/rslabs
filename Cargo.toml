@@ -6,7 +6,7 @@ edition = "2018"
 default-run = "rslabs"
 
 [workspace]
-members = ["btcodec", "btseed", "book", "c2rs", "light2d", "pXmcodec", "stdoor"]
+members = ["btcodec", "btseed", "book", "c2rs", "elf", "light2d", "pxm", "riscv", "stdoor"]
 
 [features]
 

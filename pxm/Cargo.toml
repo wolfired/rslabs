@@ -1,5 +1,5 @@
 [package]
-name = "pXmcodec"
+name = "pxm"
 version = "0.1.0"
 authors = ["LinkWu <wjianl@qq.com>"]
 edition = "2018"
