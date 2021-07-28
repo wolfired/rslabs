@@ -3,11 +3,12 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-use std::fmt::{self, Debug};
 use std::convert::TryInto;
+use std::fmt::{self, Debug};
 use std::result;
 
 use crate::phdr;
+use crate::shdr;
 
 /// File identification
 pub const EI_MAG0: usize = 0x00;
@@ -93,6 +94,7 @@ pub struct Elf_Ehdr {
     pub e_shnum: u16,
     pub e_shstrndx: u16,
     pub phdrs: Vec<phdr::Elf_Phdr>,
+    pub shdrs: Vec<shdr::Elf_Shdr>,
 }
 
 impl Elf_Ehdr {
@@ -102,67 +104,74 @@ impl Elf_Ehdr {
         }
 
         let mut offset = 0;
-        let mut ehdr = Elf_Ehdr::default();
-        ehdr.e_ident = (&raw[offset..{offset += EI_NIDENT; offset}]).try_into().unwrap();
+        let mut ins = Self::default();
+        ins.e_ident = (&raw[offset..{offset += EI_NIDENT; offset}]).try_into().unwrap();
 
-        if ELFMAG0.0 != ehdr.e_ident[EI_MAG0] || ELFMAG1.0 != ehdr.e_ident[EI_MAG1] || ELFMAG2.0 != ehdr.e_ident[EI_MAG2] || ELFMAG3.0 != ehdr.e_ident[EI_MAG3] {
+        if ELFMAG0.0 != ins.e_ident[EI_MAG0] || ELFMAG1.0 != ins.e_ident[EI_MAG1] || ELFMAG2.0 != ins.e_ident[EI_MAG2] || ELFMAG3.0 != ins.e_ident[EI_MAG3] {
             return Err(());
         }
     
-        if ELFDATA2LSB.0 == ehdr.e_ident[EI_DATA] {
-            ehdr.e_type = u16::from_le_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
-            ehdr.e_machine = u16::from_le_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
-            ehdr.e_version = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
-            if ELFCLASS32.0 == ehdr.e_ident[EI_CLASS] {
-                ehdr.e_entry = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
-                ehdr.e_phoff = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
-                ehdr.e_shoff = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
+        if ELFDATA2LSB.0 == ins.e_ident[EI_DATA] {
+            ins.e_type = u16::from_le_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
+            ins.e_machine = u16::from_le_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
+            ins.e_version = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
+            if ELFCLASS32.0 == ins.e_ident[EI_CLASS] {
+                ins.e_entry = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
+                ins.e_phoff = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
+                ins.e_shoff = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
             } else {
-                ehdr.e_entry = u64::from_le_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
-                ehdr.e_phoff = u64::from_le_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
-                ehdr.e_shoff = u64::from_le_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
+                ins.e_entry = u64::from_le_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
+                ins.e_phoff = u64::from_le_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
+                ins.e_shoff = u64::from_le_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
             }
-            ehdr.e_flags = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
-            ehdr.e_ehsize = u16::from_le_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
-            ehdr.e_phentsize = u16::from_le_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
-            ehdr.e_phnum = u16::from_le_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
-            ehdr.e_shentsize = u16::from_le_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
-            ehdr.e_shnum = u16::from_le_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
-            ehdr.e_shstrndx = u16::from_le_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
-
-            offset = ehdr.e_phoff as usize;
-
-            for _ in 0..ehdr.e_phnum {
-                let r = phdr::Elf_Phdr::from_bytes(&raw[offset..{offset += ehdr.e_phentsize as usize; offset}], ELFDATA2LSB.0 == ehdr.e_ident[EI_DATA], ELFCLASS32.0 == ehdr.e_ident[EI_CLASS]);
-                if let Ok(phdr) = r {
-                    ehdr.phdrs.push(phdr);
-                }
-            }
-        } else if ELFDATA2MSB.0 == ehdr.e_ident[EI_DATA] {
-            ehdr.e_type = u16::from_be_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
-            ehdr.e_machine = u16::from_be_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
-            ehdr.e_version = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
-            if ELFCLASS32.0 == ehdr.e_ident[EI_CLASS] {
-                ehdr.e_entry = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
-                ehdr.e_phoff = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
-                ehdr.e_shoff = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
+            ins.e_flags = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
+            ins.e_ehsize = u16::from_le_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
+            ins.e_phentsize = u16::from_le_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
+            ins.e_phnum = u16::from_le_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
+            ins.e_shentsize = u16::from_le_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
+            ins.e_shnum = u16::from_le_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
+            ins.e_shstrndx = u16::from_le_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
+        } else if ELFDATA2MSB.0 == ins.e_ident[EI_DATA] {
+            ins.e_type = u16::from_be_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
+            ins.e_machine = u16::from_be_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
+            ins.e_version = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
+            if ELFCLASS32.0 == ins.e_ident[EI_CLASS] {
+                ins.e_entry = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
+                ins.e_phoff = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
+                ins.e_shoff = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
             } else {
-                ehdr.e_entry = u64::from_be_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
-                ehdr.e_phoff = u64::from_be_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
-                ehdr.e_shoff = u64::from_be_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
+                ins.e_entry = u64::from_be_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
+                ins.e_phoff = u64::from_be_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
+                ins.e_shoff = u64::from_be_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
             }
-            ehdr.e_flags = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
-            ehdr.e_ehsize = u16::from_be_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
-            ehdr.e_phentsize = u16::from_be_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
-            ehdr.e_phnum = u16::from_be_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
-            ehdr.e_shentsize = u16::from_be_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
-            ehdr.e_shnum = u16::from_be_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
-            ehdr.e_shstrndx = u16::from_be_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
+            ins.e_flags = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
+            ins.e_ehsize = u16::from_be_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
+            ins.e_phentsize = u16::from_be_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
+            ins.e_phnum = u16::from_be_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
+            ins.e_shentsize = u16::from_be_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
+            ins.e_shnum = u16::from_be_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
+            ins.e_shstrndx = u16::from_be_bytes((&raw[offset..{offset += 2; offset}]).try_into().unwrap());
         } else {
             return Err(());
         }
 
-        Ok(ehdr)
+        offset = ins.e_phoff as usize;
+        for _ in 0..ins.e_phnum {
+            let r = phdr::Elf_Phdr::from_bytes(&raw[offset..{offset += ins.e_phentsize as usize; offset}], ELFDATA2LSB.0 == ins.e_ident[EI_DATA], ELFCLASS32.0 == ins.e_ident[EI_CLASS]);
+            if let Ok(phdr) = r {
+                ins.phdrs.push(phdr);
+            }
+        }
+
+        offset = ins.e_shoff as usize;
+        for _ in 0..ins.e_shnum {
+            let r = shdr::Elf_Shdr::from_bytes(&raw[offset..{offset += ins.e_shentsize as usize; offset}], ELFDATA2LSB.0 == ins.e_ident[EI_DATA], ELFCLASS32.0 == ins.e_ident[EI_CLASS]);
+            if let Ok(shdr) = r {
+                ins.shdrs.push(shdr);
+            }
+        }
+
+        Ok(ins)
     }
 }
 
@@ -241,6 +250,14 @@ impl fmt::Display for Elf_Ehdr {
             write!(f, "{:#01$x} ", phdr.p_memsz, 2 + if ELFCLASS32.0 == self.e_ident[EI_CLASS] { 4 } else { 8 } * 2)?;
             write!(f, "{:^#10b} ", phdr.p_flags)?;
             writeln!(f, "{:#01$x} ", phdr.p_align, 2 + if ELFCLASS32.0 == self.e_ident[EI_CLASS] { 4 } else { 8 } * 2)?;
+        }
+
+        writeln!(f)?;
+        writeln!(f, "{:^10} {:^8} {:^8} {:^8} {:^8} {:^8} {:^8} {:^8} {:^8} {:^8} {:^8}", "[Nr]", "Name", "Type", "Addr", "Off", "Size", "Es", "Flg", "Lk", "Inf", "Al")?;
+
+        for (index, shdr) in self.shdrs.iter().enumerate() {
+            write!(f, "{:^10} ", index)?;
+            writeln!(f, "{:^10} ", shdr.sh_name)?;
         }
 
         writeln!(f)

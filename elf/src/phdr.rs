@@ -36,58 +36,58 @@ pub struct Elf_Phdr {
 impl Elf_Phdr {
     pub fn from_bytes(raw: &[u8], little: bool, bit32:bool) -> result::Result<Self, ()> {
         let mut offset = 0;
-        let mut phdr = Elf_Phdr::default();
+        let mut ins = Self::default();
 
         if little {
-            phdr.p_type = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
+            ins.p_type = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
 
             if bit32 {
-                phdr.p_offset = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
-                phdr.p_vaddr = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
-                phdr.p_paddr = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
-                phdr.p_filesz = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
-                phdr.p_memsz = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
+                ins.p_offset = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
+                ins.p_vaddr = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
+                ins.p_paddr = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
+                ins.p_filesz = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
+                ins.p_memsz = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
 
-                phdr.p_flags = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
+                ins.p_flags = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
 
-                phdr.p_align = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
+                ins.p_align = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
             } else {
-                phdr.p_flags = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
+                ins.p_flags = u32::from_le_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
 
-                phdr.p_offset = u64::from_le_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
-                phdr.p_vaddr = u64::from_le_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
-                phdr.p_paddr = u64::from_le_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
-                phdr.p_filesz = u64::from_le_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
-                phdr.p_memsz = u64::from_le_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
+                ins.p_offset = u64::from_le_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
+                ins.p_vaddr = u64::from_le_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
+                ins.p_paddr = u64::from_le_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
+                ins.p_filesz = u64::from_le_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
+                ins.p_memsz = u64::from_le_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
 
-                phdr.p_align = u64::from_le_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
+                ins.p_align = u64::from_le_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
             }
         } else {
-            phdr.p_type = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
+            ins.p_type = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
 
             if bit32 {
-                phdr.p_offset = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
-                phdr.p_vaddr = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
-                phdr.p_paddr = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
-                phdr.p_filesz = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
-                phdr.p_memsz = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
+                ins.p_offset = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
+                ins.p_vaddr = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
+                ins.p_paddr = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
+                ins.p_filesz = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
+                ins.p_memsz = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
 
-                phdr.p_flags = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
+                ins.p_flags = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
 
-                phdr.p_align = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
+                ins.p_align = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap()) as u64;
             } else {
-                phdr.p_flags = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
+                ins.p_flags = u32::from_be_bytes((&raw[offset..{offset += 4; offset}]).try_into().unwrap());
 
-                phdr.p_offset = u64::from_be_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
-                phdr.p_vaddr = u64::from_be_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
-                phdr.p_paddr = u64::from_be_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
-                phdr.p_filesz = u64::from_be_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
-                phdr.p_memsz = u64::from_be_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
+                ins.p_offset = u64::from_be_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
+                ins.p_vaddr = u64::from_be_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
+                ins.p_paddr = u64::from_be_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
+                ins.p_filesz = u64::from_be_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
+                ins.p_memsz = u64::from_be_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
 
-                phdr.p_align = u64::from_be_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
+                ins.p_align = u64::from_be_bytes((&raw[offset..{offset += 8; offset}]).try_into().unwrap());
             }
         }
 
-        Ok(phdr)
+        Ok(ins)
     }
 }
