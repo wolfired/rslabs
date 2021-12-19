@@ -1,329 +1,126 @@
-#![allow(dead_code)]
 #![allow(unused_variables)]
+#![allow(dead_code)]
 
-use std::cmp::PartialEq;
-use std::cmp::PartialOrd;
-use std::fmt::Display;
-use std::collections::HashMap;
+use std::{collections::HashMap, str::from_utf8};
 
 #[derive(Debug)]
-pub enum Value {
-    Nil,
-    Str(String),
-    I64(i64),
-    #[cfg(feature = "ext")]
-    F64(f64),
-    List(Vec<Self>),
-    Dict(HashMap<String, Self>),
+pub enum BTType {
+    BTBytes(Vec<u8>),
+    BTInteger(i32),
+    BTList(Vec<BTType>),
+    BTDict(HashMap<String, BTType>),
 }
 
-impl Value {
-    pub fn new(raw: &[u8]) -> Self {
-        let (result, ..) = Self::decode(raw);
-        result
-    }
+impl BTType {
+    const FLAG_0: u8 = b'0';
+    const FLAG_9: u8 = b'9';
+    const FLAG_I: u8 = b'i';
+    const FLAG_L: u8 = b'l';
+    const FLAG_D: u8 = b'd';
+    const FLAG_S: u8 = b':';
+    const FLAG_E: u8 = b'e';
 
-    pub fn raw() -> Vec<u8> {
-        vec![0u8]
-    }
-}
+    pub fn from_raw(bytes: &[u8]) -> Option<Self> {
+        let mut index = 0;
+        let mut pairs: Vec<(usize, u8)> = Vec::new();
 
-impl PartialEq for Value {
-    fn eq(&self, other: &Self) -> bool {
-        match self {
-            Self::Str(value_l) => {
-                if let Self::Str(value_r) = other {
-                    value_l == value_r
-                } else {
-                    false
+        while index < bytes.len() {
+            let mut shift = 1;
+            match bytes[index] {
+                byte @ Self::FLAG_0..=Self::FLAG_9 => {
+                    // if pairs.is_empty() || Self::FLAG_I != pairs.last().unwrap().1 {
+                    //     pairs.push((index, byte));
+                    // }
+                    shift += Self::decode_bytes(&bytes[index..]);
                 }
-            }
-            Self::I64(value_l) => {
-                if let Self::I64(value_r) = other {
-                    value_l == value_r
-                } else {
-                    false
+                byte @ Self::FLAG_I => {
+                    pairs.push((index, byte));
                 }
-            }
-            #[cfg(feature = "ext")]
-            Self::F64(value_l) => {
-                if let Self::F64(value_r) = other {
-                    value_l == value_r
-                } else {
-                    false
+                byte @ Self::FLAG_L => {
+                    pairs.push((index, byte));
                 }
+                byte @ Self::FLAG_D => {
+                    pairs.push((index, byte));
+                }
+                byte @ Self::FLAG_S => {
+                    let mut exp = 0;
+                    while !pairs.is_empty()
+                        && Self::FLAG_0 <= pairs.last().unwrap().1
+                        && pairs.last().unwrap().1 <= Self::FLAG_9
+                    {
+                        let pair = pairs.pop().unwrap();
+
+                        shift += (pair.1 as usize - 0x30) * 10_usize.pow(exp);
+
+                        exp += 1;
+                    }
+                    pairs.push((index, byte));
+                    pairs.push((index + shift, Self::FLAG_E));
+                }
+                byte @ Self::FLAG_E => {
+                    pairs.push((index, byte));
+                }
+                _ => {}
             }
-            _ => false,
+            index += shift;
         }
-    }
-}
 
-impl PartialOrd for Value {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        match self {
-            Self::Str(value_l) => {
-                if let Self::Str(value_r) = other {
-                    value_l.partial_cmp(value_r)
-                } else {
-                    None
-                }
-            }
-            Self::I64(value_l) => {
-                if let Self::I64(value_r) = other {
-                    value_l.partial_cmp(value_r)
-                } else {
-                    None
-                }
-            }
-            #[cfg(feature = "ext")]
-            Self::F64(value_l) => {
-                if let Self::F64(value_r) = other {
-                    value_l.partial_cmp(value_r)
-                } else {
-                    None
-                }
-            }
-            _ => None,
+        if pairs.is_empty() {
+            return None;
         }
-    }
-}
 
-impl Display for Value {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Str(value) => write!(f, r#""{}""#, value),
-            Self::I64(value) => write!(f, "{}", value),
-            #[cfg(feature = "ext")]
-            Self::F64(value) => write!(f, "{}", value),
-            Self::List(value) => {
-                let mut arr = Vec::<_>::new();
+        // for (i, &(j, v)) in pairs.iter().enumerate() {
+        //     println!("{:08} -> {:08} -> {}", i, j, char::from_u32(v as u32).unwrap());
+        // }
 
-                for v in value.iter() {
-                    arr.push(v.to_string());
-                }
+        // loop {
+        //     let mut index = 0;
+        //     let mut shift = 0;
+        //     match pairs[index] {
+        //         (cursor, Self::FLAG_S) => {
+        //             shift = Self::decode_bytes();
+        //         }
+        //         (cursor, Self::FLAG_I) => {
+        //             shift = Self::decode_integer();
+        //         }
+        //         _ => break,
+        //     }
+        //     index += shift;
+        // }
 
-                write!(f, "[{}]", arr.join(", "))
-            }
-            Self::Dict(value) => {
-                let mut keys = Vec::<String>::new();
-
-                for (key, _) in value.iter() {
-                    keys.push(key.to_string());
-                }
-
-                keys.sort_by(|fst, snd| fst.cmp(snd));
-
-                let mut key_values = Vec::<_>::new();
-
-                for key in keys.iter() {
-                    key_values.push(format!(
-                        r#""{}": {}"#,
-                        key,
-                        value.get(key).unwrap().to_string()
-                    ));
-                }
-
-                write!(f, "{{{}}}", key_values.join(", "))
-            }
-            _ => write!(f, "err"),
+        let mut index = 0;
+        while index < pairs.len() {
+            index += 1;
         }
-    }
-}
 
-impl Value {
-    fn decode(bytes: &[u8]) -> (Self, usize) {
-        match bytes[0] {
-            b'0'..=b'9' => Self::decode_s(bytes),
-            b'i' => Self::decode_i(bytes),
-            #[cfg(feature = "ext")]
-            b'f' => Self::decode_f(bytes),
-            b'l' => Self::decode_l(bytes),
-            b'd' => Self::decode_d(bytes),
-            _ => (Self::Nil, 0),
-        }
+        return Some(Self::BTInteger(0));
     }
 
-    fn decode_s(bytes: &[u8]) -> (Self, usize) {
+    fn decode_bytes(bytes: &[u8]) -> usize {
+        println!("decode_bytes");
+
         let mut i = 0;
 
-        let mut buf = Vec::<_>::new();
-
         while i < bytes.len() {
-            let byte = bytes[i];
-            i += 1;
-
-            if b':' == byte {
+            if Self::FLAG_S == bytes[i] {
+                let bytes_count = from_utf8(&bytes[..i]).unwrap().parse::<usize>().unwrap();
+                println!("{}", bytes_count);
+                i += bytes_count;
                 break;
-            } else {
-                buf.push(byte);
-            }
-        }
-
-        let end = bytes
-            .len()
-            .min(i + String::from_utf8(buf).unwrap().parse::<usize>().unwrap());
-
-        let mut buf = Vec::<_>::new();
-
-        while i < end {
-            buf.push(bytes[i]);
-            i += 1;
-        }
-
-        let r = String::from_utf8(buf);
-
-        if let Result::Ok(result) = r {
-            (Self::Str(result), i)
-        } else if let Result::Err(error) = r {
-            let mut result = format!("{:02x?}", error.as_bytes());
-            result = result
-                .replace(",", "")
-                .replace("[", "")
-                .replace("]", "")
-                .replace(" ", "");
-            (Self::Str(result), i)
-        } else {
-            (Self::Str("error string".to_string()), i)
-        }
-    }
-
-    fn decode_i(bytes: &[u8]) -> (Self, usize) {
-        let mut i = 1;
-
-        let mut buf = Vec::<_>::new();
-
-        while i < bytes.len() {
-            let byte = bytes[i];
-
-            if b'e' == byte {
-                break;
-            } else {
-                buf.push(byte);
+            }else{
                 i += 1;
             }
         }
 
-        (
-            Self::I64(String::from_utf8(buf).unwrap().parse::<i64>().unwrap()),
-            i + 1,
-        )
+        // for i in ..bytes.len() {
+            
+        // }
+
+        i
     }
 
-    #[cfg(feature = "ext")]
-    fn decode_f(bytes: &[u8]) -> (Self, usize) {
-        let mut i = 1;
-
-        let mut buf = Vec::<_>::new();
-
-        while i < bytes.len() {
-            let byte = bytes[i];
-
-            if b'e' == byte {
-                break;
-            } else {
-                buf.push(byte);
-                i += 1;
-            }
-        }
-
-        (
-            Self::F64(String::from_utf8(buf).unwrap().parse::<f64>().unwrap()),
-            i + 1,
-        )
-    }
-
-    fn decode_l(bytes: &[u8]) -> (Self, usize) {
-        let mut i = 1;
-
-        let mut result: Vec<Self> = Vec::new();
-
-        while i < bytes.len() {
-            let byte = bytes[i];
-
-            if b'e' == byte {
-                break;
-            } else {
-                let (value, cost) = Self::decode(&bytes[i..]);
-                i += cost;
-
-                result.push(value);
-            }
-        }
-
-        (Self::List(result), i + 1)
-    }
-
-    fn decode_d(bytes: &[u8]) -> (Self, usize) {
-        let mut i = 1;
-
-        let mut result: std::collections::HashMap<String, Self> = std::collections::HashMap::new();
-
-        while i < bytes.len() {
-            let byte = bytes[i];
-
-            if b'e' == byte {
-                break;
-            } else {
-                let (key, cost) = Self::decode_s(&bytes[i..]);
-                i += cost;
-
-                if let Self::Str(key) = key {
-                    let (value, cost) = Self::decode(&bytes[i..]);
-                    i += cost;
-
-                    result.insert(key, value);
-                }
-            }
-        }
-
-        (Self::Dict(result), i + 1)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::Value;
-    #[test]
-    fn test_decode_s() {
-        if let (Value::Str(value), _) = Value::decode_s("6:你好".as_bytes()) {
-            assert_eq!(value, "你好".to_string());
-        }
-
-        if let (Value::Str(value), _) = Value::decode_s("5:hello".as_bytes()) {
-            assert_eq!(value, "hello".to_string());
-        }
-
-        if let (Value::Str(value), _) = Value::decode_s("0:".as_bytes()) {
-            assert_eq!(value, "".to_string());
-        }
-    }
-
-    #[test]
-    fn test_decode_i() {
-        if let (Value::I64(value), _) = Value::decode_i("i-3e".as_bytes()) {
-            assert_eq!(value, -3);
-        }
-    }
-
-    #[test]
-    #[cfg(feature = "ext")]
-    fn test_decode_f() {
-        if let (Value::F64(value), _) = Value::decode_f("f-3.33e".as_bytes()) {
-            assert_eq!(value, -3.33);
-        }
-    }
-
-    #[test]
-    fn test_decode_l() {
-        if let (Value::List(value), _) = Value::decode_l("li-3ei-3ee".as_bytes()) {
-            assert_eq!(1, 1);
-        }
-    }
-
-    #[test]
-    fn test_decode_d() {
-        if let (Value::Dict(value), _) = Value::decode_d("d1:ai0e1:bi1ee".as_bytes()) {
-            assert_eq!(1, 1);
-        }
+    fn decode_integer() -> usize {
+        println!("decode_integer");
+        0
     }
 }
